@@ -169,15 +169,21 @@ function ProviderForm({
     if (!isEditing) {
       setProviderId(context.channelName)
     }
-    setBaseUrl(context.baseUrl)
     setApiKey(context.apiKey)
-    setApi(
+    const resolvedApi =
       context.platform === 'anthropic'
         ? 'anthropic-messages'
         : context.platform === 'openai'
           ? 'openai-responses'
           : 'openai-completions'
-    )
+    setApi(resolvedApi)
+
+    // Auto-append /v1 for openai-completions if not already present
+    let importedBaseUrl = context.baseUrl
+    if (resolvedApi === 'openai-completions' && importedBaseUrl.trim() && !/\/v\d/.test(importedBaseUrl.trim())) {
+      importedBaseUrl = importedBaseUrl.trim().replace(/\/+$/, '') + '/v1'
+    }
+    setBaseUrl(importedBaseUrl)
 
     // Import models
     const newModels: OpenClawModel[] = importedModels.map(m => ({
@@ -319,7 +325,14 @@ function ProviderForm({
           {/* API Type */}
           <div className="space-y-2">
             <Label>{t('openclaw.provider.apiType')}</Label>
-            <Select value={api} onValueChange={setApi}>
+            <Select value={api} onValueChange={value => {
+              setApi(value)
+              // Auto-append /v1 for openai-completions if not already present
+              if (value === 'openai-completions' && baseUrl.trim() && !/\/v\d/.test(baseUrl.trim())) {
+                const trimmed = baseUrl.trim().replace(/\/+$/, '')
+                setBaseUrl(trimmed + '/v1')
+              }
+            }}>
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>

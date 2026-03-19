@@ -436,10 +436,7 @@ async fn fetch_new_api_keys(
         let response = client
             .get(&keys_url)
             .header("New-Api-User", user_id.to_string())
-            .query(&[
-                ("p", page.to_string()),
-                ("size", page_size.to_string()),
-            ])
+            .query(&[("p", page.to_string()), ("size", page_size.to_string())])
             .send()
             .await
             .map_err(|e| format!("Failed to fetch keys: {e}"))?;
@@ -478,10 +475,12 @@ async fn fetch_new_api_keys(
                 .await
             {
                 Ok(resp) if resp.status().is_success() => {
-                    resp.json::<Value>()
-                        .await
-                        .ok()
-                        .and_then(|v| v.get("data").and_then(|d| d.get("key")).and_then(|k| k.as_str()).map(String::from))
+                    resp.json::<Value>().await.ok().and_then(|v| {
+                        v.get("data")
+                            .and_then(|d| d.get("key"))
+                            .and_then(|k| k.as_str())
+                            .map(String::from)
+                    })
                 }
                 _ => None,
             };

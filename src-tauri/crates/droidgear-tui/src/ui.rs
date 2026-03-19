@@ -374,8 +374,16 @@ fn draw_paths(frame: &mut Frame, app: &app::App, area: Rect) {
         for (i, p) in entries.iter().enumerate() {
             let selected = i == app.paths_index;
             let default_tag = if p.is_default { "default" } else { "custom" };
-            let key_style = if selected { t.selected_style() } else { t.dim_style() };
-            let path_style = if selected { t.selected_style() } else { Style::default() };
+            let key_style = if selected {
+                t.selected_style()
+            } else {
+                t.dim_style()
+            };
+            let path_style = if selected {
+                t.selected_style()
+            } else {
+                Style::default()
+            };
             let tag_style = if selected {
                 t.selected_style()
             } else if p.is_default {
@@ -476,8 +484,8 @@ fn draw_factory_model(frame: &mut Frame, app: &app::App, area: Rect) {
             "No model loaded",
             t.warning_style(),
         ))])
-            .block(block("Factory Model"))
-            .wrap(Wrap { trim: true });
+        .block(block("Factory Model"))
+        .wrap(Wrap { trim: true });
         frame.render_widget(p, area);
         return;
     };
@@ -557,12 +565,7 @@ fn draw_factory_model(frame: &mut Frame, app: &app::App, area: Rect) {
     let list = List::new(items)
         .block(block(title))
         .highlight_style(t.selected_row_style());
-    render_list(
-        frame,
-        list,
-        chunks[0],
-        Some(app.factory_model_field_index),
-    );
+    render_list(frame, list, chunks[0], Some(app.factory_model_field_index));
 
     let help = help_paragraph("Up/Down: select  Enter/e: edit/toggle  s: save  q/Esc: back");
     frame.render_widget(help, chunks[1]);
@@ -578,12 +581,13 @@ fn draw_mcp(frame: &mut Frame, app: &app::App, area: Rect) {
     let mut items: Vec<ListItem> = Vec::new();
     for (i, s) in app.mcp_servers.iter().enumerate() {
         let selected = i == app.mcp_index;
-        let status = if s.config.disabled { "disabled" } else { "enabled" };
+        let status = if s.config.disabled {
+            "disabled"
+        } else {
+            "enabled"
+        };
         if selected {
-            items.push(ListItem::new(Line::from(format!(
-                "{}  [{status}]",
-                s.name
-            ))));
+            items.push(ListItem::new(Line::from(format!("{}  [{status}]", s.name))));
         } else {
             let status_style = if s.config.disabled {
                 t.warning_fg_style()
@@ -623,8 +627,8 @@ fn draw_mcp_server(frame: &mut Frame, app: &app::App, area: Rect) {
             "No server loaded",
             t.warning_style(),
         ))])
-            .block(block("MCP Server"))
-            .wrap(Wrap { trim: true });
+        .block(block("MCP Server"))
+        .wrap(Wrap { trim: true });
         frame.render_widget(p, area);
         return;
     };
@@ -736,8 +740,8 @@ fn draw_mcp_key_values(frame: &mut Frame, app: &app::App, area: Rect) {
             "No server loaded",
             t.warning_style(),
         ))])
-            .block(block("MCP"))
-            .wrap(Wrap { trim: true });
+        .block(block("MCP"))
+        .wrap(Wrap { trim: true });
         frame.render_widget(p, area);
         return;
     };
@@ -841,8 +845,8 @@ fn draw_openclaw_profile(frame: &mut Frame, app: &app::App, area: Rect) {
             "Failed to load profile",
             t.error_style(),
         ))])
-            .block(block("OpenClaw Profile"))
-            .wrap(Wrap { trim: true });
+        .block(block("OpenClaw Profile"))
+        .wrap(Wrap { trim: true });
         frame.render_widget(p, area);
         return;
     };
@@ -914,9 +918,9 @@ fn draw_openclaw_profile(frame: &mut Frame, app: &app::App, area: Rect) {
         "Failover Models (Tab to focus)",
         app.openclaw_detail_focus == app::OpenClawProfileFocus::Failover,
     ));
-    let failover_selected =
-        (app.openclaw_detail_focus == app::OpenClawProfileFocus::Failover && !failovers.is_empty())
-            .then_some(app.openclaw_detail_failover_index);
+    let failover_selected = (app.openclaw_detail_focus == app::OpenClawProfileFocus::Failover
+        && !failovers.is_empty())
+    .then_some(app.openclaw_detail_failover_index);
     let failover_list = failover_list.highlight_style(t.selected_row_style());
     render_list(frame, failover_list, chunks[1], failover_selected);
 
@@ -953,8 +957,8 @@ fn draw_openclaw_provider(frame: &mut Frame, app: &app::App, area: Rect) {
             "Failed to load profile",
             t.error_style(),
         ))])
-            .block(block("OpenClaw Provider"))
-            .wrap(Wrap { trim: true });
+        .block(block("OpenClaw Provider"))
+        .wrap(Wrap { trim: true });
         frame.render_widget(p, area);
         return;
     };
@@ -963,8 +967,8 @@ fn draw_openclaw_provider(frame: &mut Frame, app: &app::App, area: Rect) {
             "No provider selected",
             t.warning_style(),
         ))])
-            .block(block("OpenClaw Provider"))
-            .wrap(Wrap { trim: true });
+        .block(block("OpenClaw Provider"))
+        .wrap(Wrap { trim: true });
         frame.render_widget(p, area);
         return;
     };
@@ -973,8 +977,8 @@ fn draw_openclaw_provider(frame: &mut Frame, app: &app::App, area: Rect) {
             "Provider not found",
             t.error_style(),
         ))])
-            .block(block("OpenClaw Provider"))
-            .wrap(Wrap { trim: true });
+        .block(block("OpenClaw Provider"))
+        .wrap(Wrap { trim: true });
         frame.render_widget(p, area);
         return;
     };
@@ -1070,8 +1074,8 @@ fn draw_openclaw_model(frame: &mut Frame, app: &app::App, area: Rect) {
             "Failed to load profile",
             t.error_style(),
         ))])
-            .block(block("OpenClaw Model"))
-            .wrap(Wrap { trim: true });
+        .block(block("OpenClaw Model"))
+        .wrap(Wrap { trim: true });
         frame.render_widget(p, area);
         return;
     };
@@ -1080,8 +1084,8 @@ fn draw_openclaw_model(frame: &mut Frame, app: &app::App, area: Rect) {
             "No provider selected",
             t.warning_style(),
         ))])
-            .block(block("OpenClaw Model"))
-            .wrap(Wrap { trim: true });
+        .block(block("OpenClaw Model"))
+        .wrap(Wrap { trim: true });
         frame.render_widget(p, area);
         return;
     };
@@ -1090,8 +1094,8 @@ fn draw_openclaw_model(frame: &mut Frame, app: &app::App, area: Rect) {
             "Provider not found",
             t.error_style(),
         ))])
-            .block(block("OpenClaw Model"))
-            .wrap(Wrap { trim: true });
+        .block(block("OpenClaw Model"))
+        .wrap(Wrap { trim: true });
         frame.render_widget(p, area);
         return;
     };
@@ -1100,8 +1104,8 @@ fn draw_openclaw_model(frame: &mut Frame, app: &app::App, area: Rect) {
             "Model not found",
             t.error_style(),
         ))])
-            .block(block("OpenClaw Model"))
-            .wrap(Wrap { trim: true });
+        .block(block("OpenClaw Model"))
+        .wrap(Wrap { trim: true });
         frame.render_widget(p, area);
         return;
     };
@@ -1156,12 +1160,7 @@ fn draw_openclaw_model(frame: &mut Frame, app: &app::App, area: Rect) {
     let list = List::new(items)
         .block(block("OpenClaw Model"))
         .highlight_style(t.selected_row_style());
-    render_list(
-        frame,
-        list,
-        chunks[0],
-        Some(app.openclaw_model_field_index),
-    );
+    render_list(frame, list, chunks[0], Some(app.openclaw_model_field_index));
 
     let help = help_paragraph("Up/Down: select  Enter/e: edit/toggle  q/Esc: back");
     frame.render_widget(help, chunks[1]);
@@ -1174,8 +1173,8 @@ fn draw_openclaw_helpers(frame: &mut Frame, app: &app::App, area: Rect) {
             "Failed to load profile",
             t.error_style(),
         ))])
-            .block(block("OpenClaw Helpers"))
-            .wrap(Wrap { trim: true });
+        .block(block("OpenClaw Helpers"))
+        .wrap(Wrap { trim: true });
         frame.render_widget(p, area);
         return;
     };
@@ -1247,9 +1246,8 @@ fn draw_openclaw_helpers(frame: &mut Frame, app: &app::App, area: Rect) {
         Some(app.openclaw_helpers_field_index),
     );
 
-    let help = help_paragraph(
-        "Up/Down: select  Enter/e: edit/toggle  x: reset defaults  q/Esc: back",
-    );
+    let help =
+        help_paragraph("Up/Down: select  Enter/e: edit/toggle  x: reset defaults  q/Esc: back");
     frame.render_widget(help, chunks[1]);
 }
 
@@ -1260,8 +1258,8 @@ fn draw_opencode_profile(frame: &mut Frame, app: &app::App, area: Rect) {
             "Failed to load profile",
             t.error_style(),
         ))])
-            .block(block("OpenCode Profile"))
-            .wrap(Wrap { trim: true });
+        .block(block("OpenCode Profile"))
+        .wrap(Wrap { trim: true });
         frame.render_widget(p, area);
         return;
     };
@@ -1293,7 +1291,11 @@ fn draw_opencode_profile(frame: &mut Frame, app: &app::App, area: Rect) {
     for (i, (label, value)) in fields.into_iter().enumerate() {
         let selected = app.opencode_detail_focus == app::CodexDetailFocus::Fields
             && i == app.opencode_detail_field_index;
-        let label_style = if selected { t.selected_style() } else { t.dim_style() };
+        let label_style = if selected {
+            t.selected_style()
+        } else {
+            t.dim_style()
+        };
         let value_style = if selected {
             t.selected_style()
         } else {
@@ -1329,9 +1331,9 @@ fn draw_opencode_profile(frame: &mut Frame, app: &app::App, area: Rect) {
     .then_some(app.opencode_detail_provider_index);
     let providers_list = List::new(provider_items)
         .block(block_focus(
-        "Providers (Tab to focus)",
-        app.opencode_detail_focus == app::CodexDetailFocus::Providers,
-    ))
+            "Providers (Tab to focus)",
+            app.opencode_detail_focus == app::CodexDetailFocus::Providers,
+        ))
         .highlight_style(t.selected_row_style());
     render_list(frame, providers_list, chunks[1], providers_selected);
 
@@ -1348,8 +1350,8 @@ fn draw_opencode_provider(frame: &mut Frame, app: &app::App, area: Rect) {
             "Failed to load profile",
             t.error_style(),
         ))])
-            .block(block("OpenCode Provider"))
-            .wrap(Wrap { trim: true });
+        .block(block("OpenCode Provider"))
+        .wrap(Wrap { trim: true });
         frame.render_widget(p, area);
         return;
     };
@@ -1358,8 +1360,8 @@ fn draw_opencode_provider(frame: &mut Frame, app: &app::App, area: Rect) {
             "No provider selected",
             t.warning_style(),
         ))])
-            .block(block("OpenCode Provider"))
-            .wrap(Wrap { trim: true });
+        .block(block("OpenCode Provider"))
+        .wrap(Wrap { trim: true });
         frame.render_widget(p, area);
         return;
     };
@@ -1368,8 +1370,8 @@ fn draw_opencode_provider(frame: &mut Frame, app: &app::App, area: Rect) {
             "Provider not found",
             t.error_style(),
         ))])
-            .block(block("OpenCode Provider"))
-            .wrap(Wrap { trim: true });
+        .block(block("OpenCode Provider"))
+        .wrap(Wrap { trim: true });
         frame.render_widget(p, area);
         return;
     };
@@ -1479,8 +1481,8 @@ fn draw_opencode_model(frame: &mut Frame, app: &app::App, area: Rect) {
             "Failed to load profile",
             t.error_style(),
         ))])
-            .block(block("OpenCode Model"))
-            .wrap(Wrap { trim: true });
+        .block(block("OpenCode Model"))
+        .wrap(Wrap { trim: true });
         frame.render_widget(p, area);
         return;
     };
@@ -1489,8 +1491,8 @@ fn draw_opencode_model(frame: &mut Frame, app: &app::App, area: Rect) {
             "No provider selected",
             t.warning_style(),
         ))])
-            .block(block("OpenCode Model"))
-            .wrap(Wrap { trim: true });
+        .block(block("OpenCode Model"))
+        .wrap(Wrap { trim: true });
         frame.render_widget(p, area);
         return;
     };
@@ -1499,8 +1501,8 @@ fn draw_opencode_model(frame: &mut Frame, app: &app::App, area: Rect) {
             "No model selected",
             t.warning_style(),
         ))])
-            .block(block("OpenCode Model"))
-            .wrap(Wrap { trim: true });
+        .block(block("OpenCode Model"))
+        .wrap(Wrap { trim: true });
         frame.render_widget(p, area);
         return;
     };
@@ -1514,8 +1516,8 @@ fn draw_opencode_model(frame: &mut Frame, app: &app::App, area: Rect) {
             "Model not found",
             t.error_style(),
         ))])
-            .block(block("OpenCode Model"))
-            .wrap(Wrap { trim: true });
+        .block(block("OpenCode Model"))
+        .wrap(Wrap { trim: true });
         frame.render_widget(p, area);
         return;
     };
@@ -1574,8 +1576,8 @@ fn draw_codex_profile(frame: &mut Frame, app: &app::App, area: Rect) {
             "Failed to load profile",
             t.error_style(),
         ))])
-            .block(block("Codex Profile"))
-            .wrap(Wrap { trim: true });
+        .block(block("Codex Profile"))
+        .wrap(Wrap { trim: true });
         frame.render_widget(p, area);
         return;
     };
@@ -1625,9 +1627,13 @@ fn draw_codex_profile(frame: &mut Frame, app: &app::App, area: Rect) {
     ];
 
     for (i, (label, value)) in fields.into_iter().enumerate() {
-        let selected =
-            app.codex_detail_focus == app::CodexDetailFocus::Fields && i == app.codex_detail_field_index;
-        let label_style = if selected { t.selected_style() } else { t.dim_style() };
+        let selected = app.codex_detail_focus == app::CodexDetailFocus::Fields
+            && i == app.codex_detail_field_index;
+        let label_style = if selected {
+            t.selected_style()
+        } else {
+            t.dim_style()
+        };
         let value_style = if selected {
             t.selected_style()
         } else if label == "API Key" && value == "********" {
@@ -1651,7 +1657,11 @@ fn draw_codex_profile(frame: &mut Frame, app: &app::App, area: Rect) {
 
     let mut provider_items: Vec<ListItem> = Vec::new();
     for pid in app.codex_detail_provider_ids.iter() {
-        let active_tag = if pid == &profile.model_provider { " *" } else { "" };
+        let active_tag = if pid == &profile.model_provider {
+            " *"
+        } else {
+            ""
+        };
         if active_tag.is_empty() {
             provider_items.push(ListItem::new(Line::from(Span::raw(pid.clone()))));
         } else {
@@ -1691,8 +1701,8 @@ fn draw_codex_provider(frame: &mut Frame, app: &app::App, area: Rect) {
             "Failed to load profile",
             t.error_style(),
         ))])
-            .block(block("Codex Provider"))
-            .wrap(Wrap { trim: true });
+        .block(block("Codex Provider"))
+        .wrap(Wrap { trim: true });
         frame.render_widget(p, area);
         return;
     };
@@ -1701,8 +1711,8 @@ fn draw_codex_provider(frame: &mut Frame, app: &app::App, area: Rect) {
             "No provider selected",
             t.warning_style(),
         ))])
-            .block(block("Codex Provider"))
-            .wrap(Wrap { trim: true });
+        .block(block("Codex Provider"))
+        .wrap(Wrap { trim: true });
         frame.render_widget(p, area);
         return;
     };
@@ -1711,8 +1721,8 @@ fn draw_codex_provider(frame: &mut Frame, app: &app::App, area: Rect) {
             "Provider not found",
             t.error_style(),
         ))])
-            .block(block("Codex Provider"))
-            .wrap(Wrap { trim: true });
+        .block(block("Codex Provider"))
+        .wrap(Wrap { trim: true });
         frame.render_widget(p, area);
         return;
     };
@@ -1772,12 +1782,7 @@ fn draw_codex_provider(frame: &mut Frame, app: &app::App, area: Rect) {
     let list = List::new(items)
         .block(block(format!("Codex Provider: {provider_id}")))
         .highlight_style(t.selected_row_style());
-    render_list(
-        frame,
-        list,
-        chunks[0],
-        Some(app.codex_provider_field_index),
-    );
+    render_list(frame, list, chunks[0], Some(app.codex_provider_field_index));
 
     let help = help_paragraph("Up/Down: select  Enter/e: edit  q/Esc: back");
     frame.render_widget(help, chunks[1]);
@@ -1921,8 +1926,8 @@ fn draw_channels_edit(frame: &mut Frame, app: &app::App, area: Rect) {
             "No channel loaded",
             t.warning_style(),
         ))])
-            .block(block("Channel"))
-            .wrap(Wrap { trim: true });
+        .block(block("Channel"))
+        .wrap(Wrap { trim: true });
         frame.render_widget(p, area);
         return;
     };
@@ -2001,12 +2006,7 @@ fn draw_channels_edit(frame: &mut Frame, app: &app::App, area: Rect) {
     let list = List::new(items)
         .block(block(title))
         .highlight_style(t.selected_row_style());
-    render_list(
-        frame,
-        list,
-        chunks[0],
-        Some(app.channels_edit_field_index),
-    );
+    render_list(frame, list, chunks[0], Some(app.channels_edit_field_index));
 
     let help = help_paragraph("Up/Down: select  Enter/e: edit/toggle  s: save  q/Esc: back");
     frame.render_widget(help, chunks[1]);
@@ -2031,7 +2031,10 @@ fn draw_profile_list<'a>(
     let mut items: Vec<ListItem> = Vec::new();
     for (name, id) in profiles {
         has_profiles = true;
-        let active_tag = active_id.is_some_and(|a| a == id).then_some(" *").unwrap_or("");
+        let active_tag = active_id
+            .is_some_and(|a| a == id)
+            .then_some(" *")
+            .unwrap_or("");
         if active_tag.is_empty() {
             items.push(ListItem::new(Line::from(Span::raw(name.to_string()))));
         } else {

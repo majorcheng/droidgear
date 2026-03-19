@@ -5,8 +5,8 @@
 pub use droidgear_core::openclaw::{
     BlockStreamingChunk, BlockStreamingCoalesce, BlockStreamingConfig, OpenClawConfigStatus,
     OpenClawCurrentConfig, OpenClawModel, OpenClawProfile, OpenClawProviderConfig,
-    OpenClawSubAgent, OpenClawSubAgentIdentity, OpenClawSubAgentModel, OpenClawSubAgentSubagentsConfig,
-    OpenClawSubAgentTools, TelegramChannelConfig,
+    OpenClawSubAgent, OpenClawSubAgentIdentity, OpenClawSubAgentModel,
+    OpenClawSubAgentSubagentsConfig, OpenClawSubAgentTools, TelegramChannelConfig,
 };
 
 /// List all OpenClaw profiles

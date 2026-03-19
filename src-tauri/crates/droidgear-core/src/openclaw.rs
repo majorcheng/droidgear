@@ -914,7 +914,10 @@ pub fn save_openclaw_subagents_for_home(
         if !has_main {
             // Build main entry, merging with existing main if present
             let allow_agents_value = Value::Array(
-                non_main_ids.iter().map(|s| Value::String(s.clone())).collect(),
+                non_main_ids
+                    .iter()
+                    .map(|s| Value::String(s.clone()))
+                    .collect(),
             );
             let mut sa_obj = serde_json::Map::new();
             sa_obj.insert("allowAgents".to_string(), allow_agents_value);
@@ -924,11 +927,7 @@ pub fn save_openclaw_subagents_for_home(
             main_overlay.insert("subagents".to_string(), Value::Object(sa_obj));
 
             let main_entry = if let Some(mut existing_main) = existing_map.remove("main") {
-                deep_merge_with_replace(
-                    &mut existing_main,
-                    &Value::Object(main_overlay),
-                    &[],
-                );
+                deep_merge_with_replace(&mut existing_main, &Value::Object(main_overlay), &[]);
                 existing_main
             } else {
                 Value::Object(main_overlay)
@@ -958,4 +957,3 @@ pub fn read_openclaw_subagents() -> Result<Vec<OpenClawSubAgent>, String> {
 pub fn save_openclaw_subagents(subagents: Vec<OpenClawSubAgent>) -> Result<(), String> {
     save_openclaw_subagents_for_home(&system_home_dir()?, subagents)
 }
-

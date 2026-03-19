@@ -1,5 +1,18 @@
 # Changelog
 
+## v0.5.1
+
+**New Features / 新功能**
+
+- Add OpenClaw subagent management UI and backend integration / 添加 OpenClaw 子智能体管理界面和后端集成
+- Support fetching unmasked API keys for NewApi channel type / 支持获取 NewApi 渠道类型的未脱敏 API 密钥
+- Improve TUI layout and styling / 改进 TUI 布局和样式
+
+**Bug Fixes / 问题修复**
+
+- Clear TUI modal background / 修复 TUI 模态框背景清除问题
+- Correct releases URL in READMEs and use gh CLI for TUI upload to avoid duplicate draft releases / 修正 README 中的 releases URL 并使用 gh CLI 上传 TUI 以避免重复草稿发布
+
 ## v0.5.0
 
 **New Features / 新功能**

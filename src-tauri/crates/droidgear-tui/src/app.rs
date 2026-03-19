@@ -5,7 +5,7 @@ use droidgear_core::{
     codex::CodexProfile,
     factory_settings::CustomModel,
     mcp::McpServer,
-    openclaw::OpenClawProfile,
+    openclaw::{OpenClawProfile, OpenClawSubAgent},
     opencode::OpenCodeProfile,
     paths::{EffectivePath, EffectivePaths},
     sessions::SessionSummary,
@@ -34,6 +34,8 @@ pub enum Screen {
     OpenClawProvider,
     OpenClawModel,
     OpenClawHelpers,
+    OpenClawSubagents,
+    OpenClawSubagentDetail,
     Sessions,
     Specs,
     Channels,
@@ -132,6 +134,12 @@ pub enum ConfirmAction {
         path: String,
     },
     ChannelDelete {
+        id: String,
+    },
+    OpenClawSubagentDelete {
+        id: String,
+    },
+    OpenClawSubagentToggleAllow {
         id: String,
     },
 }
@@ -307,6 +315,19 @@ pub enum InputAction {
     ChannelsDraftSetUsername,
     ChannelsDraftSetPassword,
     ChannelsDraftSetApiKey,
+    OpenClawSubagentCreate,
+    OpenClawSubagentSetName {
+        id: String,
+    },
+    OpenClawSubagentSetEmoji {
+        id: String,
+    },
+    OpenClawSubagentSetPrimaryModel {
+        id: String,
+    },
+    OpenClawSubagentSetWorkspace {
+        id: String,
+    },
 }
 
 #[derive(Debug, Clone)]
@@ -351,6 +372,9 @@ pub enum SelectAction {
     FactoryDraftSetProvider,
     McpDraftSetType,
     ChannelsDraftSetType,
+    OpenClawSubagentSetToolsProfile {
+        id: String,
+    },
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -449,6 +473,11 @@ pub struct App {
     pub openclaw_model_field_index: usize,
     pub openclaw_helpers_field_index: usize,
 
+    pub openclaw_subagents: Vec<OpenClawSubAgent>,
+    pub openclaw_subagents_index: usize,
+    pub openclaw_subagent_detail: Option<OpenClawSubAgent>,
+    pub openclaw_subagent_field_index: usize,
+
     pub sessions: Vec<SessionSummary>,
     pub sessions_index: usize,
 
@@ -532,6 +561,10 @@ impl App {
             openclaw_provider_model_index: 0,
             openclaw_model_field_index: 0,
             openclaw_helpers_field_index: 0,
+            openclaw_subagents: Vec::new(),
+            openclaw_subagents_index: 0,
+            openclaw_subagent_detail: None,
+            openclaw_subagent_field_index: 0,
             sessions: Vec::new(),
             sessions_index: 0,
             specs: Vec::new(),
@@ -747,6 +780,13 @@ impl App {
         let openclaw_helpers_fields_count = 7;
         if self.openclaw_helpers_field_index >= openclaw_helpers_fields_count {
             self.openclaw_helpers_field_index = openclaw_helpers_fields_count.saturating_sub(1);
+        }
+        if self.openclaw_subagents_index >= self.openclaw_subagents.len() {
+            self.openclaw_subagents_index = self.openclaw_subagents.len().saturating_sub(1);
+        }
+        let subagent_fields_count = 5;
+        if self.openclaw_subagent_field_index >= subagent_fields_count {
+            self.openclaw_subagent_field_index = subagent_fields_count.saturating_sub(1);
         }
         if self.sessions_index >= self.sessions.len() {
             self.sessions_index = self.sessions.len().saturating_sub(1);

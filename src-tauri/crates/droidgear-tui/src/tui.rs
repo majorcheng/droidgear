@@ -143,6 +143,9 @@ fn refresh_screen_data(app: &mut app::App) {
             refresh_openclaw(app);
             refresh_openclaw_detail(app);
         }
+        app::Screen::OpenClawSubagents | app::Screen::OpenClawSubagentDetail => {
+            refresh_openclaw_subagents(app);
+        }
         app::Screen::Sessions => refresh_sessions(app),
         app::Screen::Specs => refresh_specs(app),
         app::Screen::Channels => refresh_channels(app),
@@ -344,6 +347,13 @@ fn refresh_openclaw_detail(app: &mut app::App) {
     }
 }
 
+fn refresh_openclaw_subagents(app: &mut app::App) {
+    match droidgear_core::openclaw::read_openclaw_subagents_for_home(&app.home_dir) {
+        Ok(list) => app.openclaw_subagents = list,
+        Err(e) => app.set_toast(e, true),
+    }
+}
+
 fn refresh_sessions(app: &mut app::App) {
     match droidgear_core::sessions::list_sessions_for_home(&app.home_dir, None) {
         Ok(list) => app.sessions = list,
@@ -392,6 +402,8 @@ fn handle_key(app: &mut app::App, code: KeyCode) -> Option<Action> {
         app::Screen::OpenClawProvider => handle_openclaw_provider_key(app, code),
         app::Screen::OpenClawModel => handle_openclaw_model_key(app, code),
         app::Screen::OpenClawHelpers => handle_openclaw_helpers_key(app, code),
+        app::Screen::OpenClawSubagents => handle_openclaw_subagents_key(app, code),
+        app::Screen::OpenClawSubagentDetail => handle_openclaw_subagent_detail_key(app, code),
         app::Screen::Sessions => handle_sessions_key(app, code),
         app::Screen::Specs => handle_specs_key(app, code),
         app::Screen::Channels => handle_channels_key(app, code),
@@ -2123,6 +2135,13 @@ fn handle_openclaw_profile_key(app: &mut app::App, code: KeyCode) -> Option<Acti
             app.openclaw_helpers_field_index = 0;
             app.screen = app::Screen::OpenClawHelpers;
         }
+        KeyCode::Char('s') => {
+            app.openclaw_subagents_index = 0;
+            app.openclaw_subagent_detail = None;
+            app.openclaw_subagent_field_index = 0;
+            app.screen = app::Screen::OpenClawSubagents;
+            refresh_openclaw_subagents(app);
+        }
         KeyCode::Char('n') => match app.openclaw_detail_focus {
             app::OpenClawProfileFocus::Failover => {
                 let refs = openclaw_available_model_refs(profile);
@@ -2736,6 +2755,184 @@ fn openclaw_reset_helpers(app: &mut app::App, profile_id: &str) -> anyhow::Resul
     });
     droidgear_core::openclaw::save_openclaw_profile_for_home(&app.home_dir, profile)
         .map_err(anyhow::Error::msg)?;
+    Ok(())
+}
+
+fn openclaw_subagent_allowed_ids(subagents: &[droidgear_core::openclaw::OpenClawSubAgent]) -> std::collections::HashSet<String> {
+    subagents
+        .iter()
+        .find(|a| a.id == "main")
+        .and_then(|main| main.subagents.as_ref())
+        .and_then(|sa| sa.allow_agents.as_ref())
+        .map(|list| list.iter().cloned().collect())
+        .unwrap_or_default()
+}
+
+fn handle_openclaw_subagents_key(app: &mut app::App, code: KeyCode) -> Option<Action> {
+    // Filter non-main subagents for navigation
+    let non_main: Vec<_> = app.openclaw_subagents.iter().filter(|a| a.id != "main").collect();
+    let allowed = openclaw_subagent_allowed_ids(&app.openclaw_subagents);
+
+    match code {
+        KeyCode::Esc | KeyCode::Char('q') => app.screen = app::Screen::OpenClawProfile,
+        KeyCode::Down => app.openclaw_subagents_index = app.openclaw_subagents_index.saturating_add(1),
+        KeyCode::Up => app.openclaw_subagents_index = app.openclaw_subagents_index.saturating_sub(1),
+        KeyCode::Char('r') => refresh_openclaw_subagents(app),
+        KeyCode::Char('n') => {
+            app.modal = Some(app::Modal::Input {
+                title: "New subagent id".to_string(),
+                value: String::new(),
+                is_secret: false,
+                action: app::InputAction::OpenClawSubagentCreate,
+            });
+        }
+        KeyCode::Char('d') => {
+            if let Some(agent) = non_main.get(app.openclaw_subagents_index) {
+                app.modal = Some(app::Modal::Confirm {
+                    message: format!("Delete subagent '{}'?", agent.id),
+                    action: app::ConfirmAction::OpenClawSubagentDelete {
+                        id: agent.id.clone(),
+                    },
+                });
+            }
+        }
+        KeyCode::Char('t') => {
+            if let Some(agent) = non_main.get(app.openclaw_subagents_index) {
+                let status = if allowed.contains(&agent.id) {
+                    "disallow"
+                } else {
+                    "allow"
+                };
+                app.modal = Some(app::Modal::Confirm {
+                    message: format!("{} subagent '{}'?", status, agent.id),
+                    action: app::ConfirmAction::OpenClawSubagentToggleAllow {
+                        id: agent.id.clone(),
+                    },
+                });
+            }
+        }
+        KeyCode::Enter | KeyCode::Char('e') => {
+            if let Some(agent) = non_main.get(app.openclaw_subagents_index) {
+                app.openclaw_subagent_detail = Some((*agent).clone());
+                app.openclaw_subagent_field_index = 0;
+                app.screen = app::Screen::OpenClawSubagentDetail;
+            }
+        }
+        _ => {}
+    }
+    None
+}
+
+fn handle_openclaw_subagent_detail_key(app: &mut app::App, code: KeyCode) -> Option<Action> {
+    let Some(agent) = app.openclaw_subagent_detail.as_ref() else {
+        app.screen = app::Screen::OpenClawSubagents;
+        return None;
+    };
+    let agent_id = agent.id.clone();
+
+    match code {
+        KeyCode::Esc | KeyCode::Char('q') => {
+            app.openclaw_subagent_detail = None;
+            app.screen = app::Screen::OpenClawSubagents;
+        }
+        KeyCode::Down => {
+            app.openclaw_subagent_field_index = app.openclaw_subagent_field_index.saturating_add(1)
+        }
+        KeyCode::Up => {
+            app.openclaw_subagent_field_index = app.openclaw_subagent_field_index.saturating_sub(1)
+        }
+        KeyCode::Enter | KeyCode::Char('e') => match app.openclaw_subagent_field_index {
+            0 => {
+                app.modal = Some(app::Modal::Input {
+                    title: "Name".to_string(),
+                    value: agent.name.clone().unwrap_or_default(),
+                    is_secret: false,
+                    action: app::InputAction::OpenClawSubagentSetName { id: agent_id },
+                });
+            }
+            1 => {
+                app.modal = Some(app::Modal::Input {
+                    title: "Emoji".to_string(),
+                    value: agent
+                        .identity
+                        .as_ref()
+                        .and_then(|i| i.emoji.clone())
+                        .unwrap_or_default(),
+                    is_secret: false,
+                    action: app::InputAction::OpenClawSubagentSetEmoji { id: agent_id },
+                });
+            }
+            2 => {
+                app.modal = Some(app::Modal::Input {
+                    title: "Primary model".to_string(),
+                    value: agent
+                        .model
+                        .as_ref()
+                        .and_then(|m| m.primary.clone())
+                        .unwrap_or_default(),
+                    is_secret: false,
+                    action: app::InputAction::OpenClawSubagentSetPrimaryModel { id: agent_id },
+                });
+            }
+            3 => {
+                let options = vec![
+                    "full".to_string(),
+                    "read".to_string(),
+                    "none".to_string(),
+                ];
+                let current = agent
+                    .tools
+                    .as_ref()
+                    .and_then(|t| t.profile.as_deref());
+                let index = current
+                    .and_then(|v| options.iter().position(|o| o == v))
+                    .unwrap_or(0);
+                app.modal = Some(app::Modal::Select {
+                    title: "Tools profile".to_string(),
+                    options,
+                    index,
+                    action: app::SelectAction::OpenClawSubagentSetToolsProfile { id: agent_id },
+                });
+            }
+            4 => {
+                app.modal = Some(app::Modal::Input {
+                    title: "Workspace".to_string(),
+                    value: agent.workspace.clone().unwrap_or_default(),
+                    is_secret: false,
+                    action: app::InputAction::OpenClawSubagentSetWorkspace { id: agent_id },
+                });
+            }
+            _ => {}
+        },
+        _ => {}
+    }
+    None
+}
+
+fn openclaw_update_subagent(
+    app: &mut app::App,
+    id: &str,
+    updater: impl FnOnce(&mut droidgear_core::openclaw::OpenClawSubAgent),
+) -> anyhow::Result<()> {
+    let mut subagents =
+        droidgear_core::openclaw::read_openclaw_subagents_for_home(&app.home_dir)
+            .map_err(anyhow::Error::msg)?;
+    if let Some(agent) = subagents.iter_mut().find(|a| a.id == id) {
+        updater(agent);
+    }
+    droidgear_core::openclaw::save_openclaw_subagents_for_home(&app.home_dir, subagents)
+        .map_err(anyhow::Error::msg)?;
+    refresh_openclaw_subagents(app);
+    // Update detail if viewing
+    if let Some(detail) = app.openclaw_subagent_detail.as_ref() {
+        if detail.id == id {
+            app.openclaw_subagent_detail = app
+                .openclaw_subagents
+                .iter()
+                .find(|a| a.id == id)
+                .cloned();
+        }
+    }
     Ok(())
 }
 
@@ -3907,6 +4104,36 @@ fn run_select_action(
 
             Ok(())
         }
+        app::SelectAction::OpenClawSubagentSetToolsProfile { id } => {
+            let Some(selected) = selected else {
+                return Ok(());
+            };
+            let mut subagents =
+                droidgear_core::openclaw::read_openclaw_subagents_for_home(&app.home_dir)
+                    .map_err(anyhow::Error::msg)?;
+            if let Some(agent) = subagents.iter_mut().find(|a| a.id == id) {
+                let profile = if selected.is_empty() || selected == "(none)" {
+                    None
+                } else {
+                    Some(selected)
+                };
+                agent.tools = Some(droidgear_core::openclaw::OpenClawSubAgentTools { profile });
+            }
+            droidgear_core::openclaw::save_openclaw_subagents_for_home(&app.home_dir, subagents)
+                .map_err(anyhow::Error::msg)?;
+            refresh_openclaw_subagents(app);
+            // Update detail if viewing
+            if let Some(detail) = app.openclaw_subagent_detail.as_ref() {
+                if detail.id == id {
+                    app.openclaw_subagent_detail = app
+                        .openclaw_subagents
+                        .iter()
+                        .find(|a| a.id == id)
+                        .cloned();
+                }
+            }
+            Ok(())
+        }
     }
 }
 
@@ -4108,6 +4335,68 @@ fn run_confirm_action(app: &mut app::App, action: app::ConfirmAction) -> anyhow:
                 .map_err(anyhow::Error::msg)?;
             droidgear_core::channel::delete_channel_credentials_for_home(&app.home_dir, &id)
                 .map_err(anyhow::Error::msg)?;
+            Ok(())
+        }
+        app::ConfirmAction::OpenClawSubagentDelete { id } => {
+            let mut subagents =
+                droidgear_core::openclaw::read_openclaw_subagents_for_home(&app.home_dir)
+                    .map_err(anyhow::Error::msg)?;
+            subagents.retain(|a| a.id != id);
+            // Also remove from main's allowAgents
+            if let Some(main) = subagents.iter_mut().find(|a| a.id == "main") {
+                if let Some(ref mut sa) = main.subagents {
+                    if let Some(ref mut allows) = sa.allow_agents {
+                        allows.retain(|a| a != &id);
+                    }
+                }
+            }
+            droidgear_core::openclaw::save_openclaw_subagents_for_home(&app.home_dir, subagents)
+                .map_err(anyhow::Error::msg)?;
+            refresh_openclaw_subagents(app);
+            Ok(())
+        }
+        app::ConfirmAction::OpenClawSubagentToggleAllow { id } => {
+            let mut subagents =
+                droidgear_core::openclaw::read_openclaw_subagents_for_home(&app.home_dir)
+                    .map_err(anyhow::Error::msg)?;
+            let has_main = subagents.iter().any(|a| a.id == "main");
+            if has_main {
+                if let Some(main) = subagents.iter_mut().find(|a| a.id == "main") {
+                    let sa = main.subagents.get_or_insert_with(|| {
+                        droidgear_core::openclaw::OpenClawSubAgentSubagentsConfig {
+                            allow_agents: None,
+                            max_concurrent: None,
+                        }
+                    });
+                    let allows = sa.allow_agents.get_or_insert_with(Vec::new);
+                    if allows.contains(&id) {
+                        allows.retain(|a| a != &id);
+                    } else {
+                        allows.push(id);
+                    }
+                }
+            } else {
+                subagents.insert(
+                    0,
+                    droidgear_core::openclaw::OpenClawSubAgent {
+                        id: "main".to_string(),
+                        name: None,
+                        identity: None,
+                        model: None,
+                        tools: None,
+                        workspace: None,
+                        subagents: Some(
+                            droidgear_core::openclaw::OpenClawSubAgentSubagentsConfig {
+                                allow_agents: Some(vec![id]),
+                                max_concurrent: None,
+                            },
+                        ),
+                    },
+                );
+            }
+            droidgear_core::openclaw::save_openclaw_subagents_for_home(&app.home_dir, subagents)
+                .map_err(anyhow::Error::msg)?;
+            refresh_openclaw_subagents(app);
             Ok(())
         }
     }
@@ -5318,6 +5607,101 @@ fn run_input_action(
         app::InputAction::ChannelsDraftSetApiKey => {
             app.channels_edit_api_key = value;
             Ok(())
+        }
+        app::InputAction::OpenClawSubagentCreate => {
+            let id = value.trim().to_string();
+            if id.is_empty() {
+                return Ok(());
+            }
+            let mut subagents =
+                droidgear_core::openclaw::read_openclaw_subagents_for_home(&app.home_dir)
+                    .map_err(anyhow::Error::msg)?;
+            if subagents.iter().any(|a| a.id == id) {
+                app.set_toast(format!("Subagent '{}' already exists", id), true);
+                return Ok(());
+            }
+            let agent = droidgear_core::openclaw::OpenClawSubAgent {
+                id: id.clone(),
+                name: None,
+                identity: Some(droidgear_core::openclaw::OpenClawSubAgentIdentity {
+                    emoji: Some("💻".to_string()),
+                    name: None,
+                }),
+                model: None,
+                tools: Some(droidgear_core::openclaw::OpenClawSubAgentTools {
+                    profile: Some("full".to_string()),
+                }),
+                workspace: None,
+                subagents: None,
+            };
+            subagents.push(agent);
+            // Auto-add to main's allowAgents
+            if let Some(main) = subagents.iter_mut().find(|a| a.id == "main") {
+                let sa = main.subagents.get_or_insert_with(|| {
+                    droidgear_core::openclaw::OpenClawSubAgentSubagentsConfig {
+                        allow_agents: None,
+                        max_concurrent: None,
+                    }
+                });
+                let allows = sa.allow_agents.get_or_insert_with(Vec::new);
+                if !allows.contains(&id) {
+                    allows.push(id);
+                }
+            }
+            droidgear_core::openclaw::save_openclaw_subagents_for_home(&app.home_dir, subagents)
+                .map_err(anyhow::Error::msg)?;
+            refresh_openclaw_subagents(app);
+            Ok(())
+        }
+        app::InputAction::OpenClawSubagentSetName { id } => {
+            openclaw_update_subagent(app, &id, |agent| {
+                agent.name = if value.trim().is_empty() {
+                    None
+                } else {
+                    Some(value.trim().to_string())
+                };
+            })
+        }
+        app::InputAction::OpenClawSubagentSetEmoji { id } => {
+            openclaw_update_subagent(app, &id, |agent| {
+                let emoji = if value.trim().is_empty() {
+                    None
+                } else {
+                    Some(value.trim().to_string())
+                };
+                let identity = agent.identity.get_or_insert_with(|| {
+                    droidgear_core::openclaw::OpenClawSubAgentIdentity {
+                        emoji: None,
+                        name: None,
+                    }
+                });
+                identity.emoji = emoji;
+            })
+        }
+        app::InputAction::OpenClawSubagentSetPrimaryModel { id } => {
+            openclaw_update_subagent(app, &id, |agent| {
+                let primary = if value.trim().is_empty() {
+                    None
+                } else {
+                    Some(value.trim().to_string())
+                };
+                let model = agent.model.get_or_insert_with(|| {
+                    droidgear_core::openclaw::OpenClawSubAgentModel {
+                        primary: None,
+                        fallbacks: None,
+                    }
+                });
+                model.primary = primary;
+            })
+        }
+        app::InputAction::OpenClawSubagentSetWorkspace { id } => {
+            openclaw_update_subagent(app, &id, |agent| {
+                agent.workspace = if value.trim().is_empty() {
+                    None
+                } else {
+                    Some(value.trim().to_string())
+                };
+            })
         }
     }
 }

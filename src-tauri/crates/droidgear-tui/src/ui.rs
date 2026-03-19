@@ -335,6 +335,8 @@ fn draw_main(frame: &mut Frame, app: &app::App, area: Rect) {
         app::Screen::OpenClawProvider => draw_openclaw_provider(frame, app, area),
         app::Screen::OpenClawModel => draw_openclaw_model(frame, app, area),
         app::Screen::OpenClawHelpers => draw_openclaw_helpers(frame, app, area),
+        app::Screen::OpenClawSubagents => draw_openclaw_subagents(frame, app, area),
+        app::Screen::OpenClawSubagentDetail => draw_openclaw_subagent_detail(frame, app, area),
         app::Screen::Sessions => draw_sessions(frame, app, area),
         app::Screen::Specs => draw_specs(frame, app, area),
         app::Screen::Channels => draw_channels(frame, app, area),
@@ -1248,6 +1250,157 @@ fn draw_openclaw_helpers(frame: &mut Frame, app: &app::App, area: Rect) {
 
     let help =
         help_paragraph("Up/Down: select  Enter/e: edit/toggle  x: reset defaults  q/Esc: back");
+    frame.render_widget(help, chunks[1]);
+}
+
+fn draw_openclaw_subagents(frame: &mut Frame, app: &app::App, area: Rect) {
+    let t = theme();
+    let chunks = Layout::default()
+        .direction(Direction::Vertical)
+        .constraints([Constraint::Min(0), Constraint::Length(2)].as_ref())
+        .split(area);
+
+    // Derive allowed set from main agent
+    let allowed: std::collections::HashSet<String> = app
+        .openclaw_subagents
+        .iter()
+        .find(|a| a.id == "main")
+        .and_then(|main| main.subagents.as_ref())
+        .and_then(|sa| sa.allow_agents.as_ref())
+        .map(|list| list.iter().cloned().collect())
+        .unwrap_or_default();
+
+    let non_main: Vec<_> = app
+        .openclaw_subagents
+        .iter()
+        .filter(|a| a.id != "main")
+        .collect();
+
+    let mut items: Vec<ListItem> = Vec::new();
+    for (i, agent) in non_main.iter().enumerate() {
+        let selected = i == app.openclaw_subagents_index;
+        let emoji = agent
+            .identity
+            .as_ref()
+            .and_then(|id| id.emoji.as_deref())
+            .unwrap_or("");
+        let name = agent.name.as_deref().unwrap_or(&agent.id);
+        let model = agent
+            .model
+            .as_ref()
+            .and_then(|m| m.primary.as_deref())
+            .unwrap_or("(no model)");
+        let is_allowed = allowed.contains(&agent.id);
+        let status = if is_allowed { "allowed" } else { "disallowed" };
+
+        if selected {
+            items.push(ListItem::new(Line::from(format!(
+                "{emoji} {name}  ({model})  [{status}]"
+            ))));
+        } else {
+            let status_style = if is_allowed {
+                t.success_fg_style()
+            } else {
+                t.warning_fg_style()
+            };
+            items.push(ListItem::new(Line::from(vec![
+                Span::raw(format!("{emoji} {name}")),
+                Span::styled(format!("  ({model})"), t.dim_style()),
+                Span::raw("  "),
+                Span::styled(format!("[{status}]"), status_style),
+            ])));
+        }
+    }
+
+    if items.is_empty() {
+        items.push(ListItem::new(Line::from(Span::styled(
+            "No subagents",
+            t.placeholder_style(),
+        ))));
+    }
+
+    let selected = (!non_main.is_empty()).then_some(app.openclaw_subagents_index);
+    let list = List::new(items)
+        .block(block("OpenClaw Subagents"))
+        .highlight_style(t.selected_row_style());
+    render_list(frame, list, chunks[0], selected);
+
+    let help = help_paragraph(
+        "Up/Down: select  Enter/e: edit  n: new  d: delete  t: toggle allow  r: refresh  q/Esc: back",
+    );
+    frame.render_widget(help, chunks[1]);
+}
+
+fn draw_openclaw_subagent_detail(frame: &mut Frame, app: &app::App, area: Rect) {
+    let t = theme();
+    let Some(agent) = app.openclaw_subagent_detail.as_ref() else {
+        let p = Paragraph::new(vec![Line::from(Span::styled(
+            "No subagent loaded",
+            t.warning_style(),
+        ))])
+        .block(block("Subagent"))
+        .wrap(Wrap { trim: true });
+        frame.render_widget(p, area);
+        return;
+    };
+
+    let name = agent.name.as_deref().unwrap_or("(none)").to_string();
+    let emoji = agent
+        .identity
+        .as_ref()
+        .and_then(|id| id.emoji.as_deref())
+        .unwrap_or("(none)")
+        .to_string();
+    let primary_model = agent
+        .model
+        .as_ref()
+        .and_then(|m| m.primary.as_deref())
+        .unwrap_or("(none)")
+        .to_string();
+    let tools_profile = agent
+        .tools
+        .as_ref()
+        .and_then(|t| t.profile.as_deref())
+        .unwrap_or("(none)")
+        .to_string();
+    let workspace = agent.workspace.as_deref().unwrap_or("(none)").to_string();
+
+    let fields: Vec<(&str, String)> = vec![
+        ("Name", name),
+        ("Emoji", emoji),
+        ("Primary Model", primary_model),
+        ("Tools Profile", tools_profile),
+        ("Workspace", workspace),
+    ];
+
+    let mut items: Vec<ListItem> = Vec::new();
+    for (i, (label, value)) in fields.into_iter().enumerate() {
+        let selected = i == app.openclaw_subagent_field_index;
+        let line = if selected {
+            Line::from(format!("{label:>14}: {value}"))
+        } else {
+            field_line(label, &value, 14)
+        };
+        items.push(ListItem::new(line));
+    }
+
+    let chunks = Layout::default()
+        .direction(Direction::Vertical)
+        .constraints([Constraint::Min(0), Constraint::Length(2)].as_ref())
+        .split(area);
+
+    let title = format!("Subagent: {}", agent.id);
+    let list = List::new(items)
+        .block(block(title))
+        .highlight_style(t.selected_row_style());
+    render_list(
+        frame,
+        list,
+        chunks[0],
+        Some(app.openclaw_subagent_field_index),
+    );
+
+    let help = help_paragraph("Up/Down: select  Enter/e: edit  q/Esc: back");
     frame.render_widget(help, chunks[1]);
 }
 

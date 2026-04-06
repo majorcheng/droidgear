@@ -27,10 +27,7 @@ pub struct AppPreferences {
     /// User's preferred language (e.g., "en", "es", "de")
     /// If None, uses system locale detection
     pub language: Option<String>,
-    /// Whether the skip login feature is enabled
-    /// If None, defaults to false (disabled)
-    #[serde(default)]
-    pub skip_login_enabled: Option<bool>,
+
     /// Custom font family for terminal (e.g., "Cascadia Mono NF")
     /// If None, uses default monospace fonts
     #[serde(default)]
@@ -50,7 +47,6 @@ impl Default for AppPreferences {
         Self {
             theme: "system".to_string(),
             language: None,               // None means use system locale
-            skip_login_enabled: None,     // None means disabled (default)
             terminal_font_family: None,   // None means use default fonts
             terminal_shell_command: None, // None means use default shell
             disable_auto_update: None,    // None means auto-update enabled (default)

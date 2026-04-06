@@ -1,12 +1,11 @@
 import { useState, useEffect, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
-import { AlertCircle, Copy, Check, RefreshCw } from 'lucide-react'
+import { AlertCircle, Copy, Check } from 'lucide-react'
 import { writeText } from '@tauri-apps/plugin-clipboard-manager'
 import { toast } from 'sonner'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
 import {
   Select,
   SelectContent,
@@ -25,17 +24,7 @@ import {
 import { commands } from '@/lib/bindings'
 import { useUIStore } from '@/store/ui-store'
 
-const ENV_VAR_NAME = 'FACTORY_API_KEY'
 const AUTO_UPDATE_ENV_VAR_NAME = 'FACTORY_DROID_AUTO_UPDATE_ENABLED'
-
-function generateRandomKey(): string {
-  const chars = 'abcdefghijklmnopqrstuvwxyz0123456789'
-  let result = 'fk-'
-  for (let i = 0; i < 24; i++) {
-    result += chars.charAt(Math.floor(Math.random() * chars.length))
-  }
-  return result
-}
 
 type ShellType = 'bash' | 'zsh' | 'powershell'
 
@@ -74,39 +63,6 @@ function CopyableCommand({
   )
 }
 
-function ShellCommandSection({
-  shell,
-  apiKeyValue,
-}: {
-  shell: ShellType
-  apiKeyValue: string
-}) {
-  const { t } = useTranslation()
-
-  const getCommand = () => {
-    if (shell === 'powershell') {
-      return `$env:${ENV_VAR_NAME} = "${apiKeyValue}"`
-    }
-    return `export ${ENV_VAR_NAME}="${apiKeyValue}"`
-  }
-
-  const labelKey = `droid.helpers.skipLogin.instructions.${shell}`
-  const pathKey = `droid.helpers.skipLogin.instructions.${shell}Path`
-
-  return (
-    <div className="space-y-2">
-      <div className="flex items-center gap-2 text-sm">
-        <span className="font-medium">{t(labelKey)}</span>
-        <span className="text-muted-foreground">- {t(pathKey)}</span>
-      </div>
-      <CopyableCommand
-        command={getCommand()}
-        onCopy={() => toast.success(t('common.copied'))}
-      />
-    </div>
-  )
-}
-
 function EnvVarShellCommandSection({
   shell,
   envVarName,
@@ -125,8 +81,8 @@ function EnvVarShellCommandSection({
     return `export ${envVarName}="${envVarValue}"`
   }
 
-  const labelKey = `droid.helpers.skipLogin.instructions.${shell}`
-  const pathKey = `droid.helpers.skipLogin.instructions.${shell}Path`
+  const labelKey = `droid.helpers.shellInstructions.${shell}`
+  const pathKey = `droid.helpers.shellInstructions.${shell}Path`
 
   return (
     <div className="space-y-2">
@@ -162,10 +118,8 @@ export function DroidHelpersPage() {
     }
   }, [droidHelpersScrollTarget, setDroidHelpersScrollTarget])
 
-  const [setupDialogOpen, setSetupDialogOpen] = useState(false)
   const [disableAutoUpdateDialogOpen, setDisableAutoUpdateDialogOpen] =
     useState(false)
-  const [apiKeyValue, setApiKeyValue] = useState('')
   const [cloudSessionSync, setCloudSessionSync] = useState(true)
 
   // Session settings states
@@ -231,10 +185,7 @@ export function DroidHelpersPage() {
     }
   }, [])
 
-  const handleOpenSetupDialog = () => {
-    setApiKeyValue(generateRandomKey())
-    setSetupDialogOpen(true)
-  }
+
 
   const handleCloudSessionSyncToggle = async (enabled: boolean) => {
     setCloudSessionSync(enabled)
@@ -341,28 +292,6 @@ export function DroidHelpersPage() {
             </div>
           </div>
 
-          {/* Skip Login Section */}
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <div className="flex flex-col gap-1">
-                <Label className="text-base font-medium">
-                  {t('droid.helpers.skipLogin.title')}
-                </Label>
-                <p className="text-sm text-muted-foreground">
-                  {t('droid.helpers.skipLogin.description')}
-                </p>
-              </div>
-              <Button variant="outline" onClick={handleOpenSetupDialog}>
-                {t('droid.helpers.skipLogin.setupButton')}
-              </Button>
-            </div>
-            <div className="flex items-center gap-2 text-amber-600 dark:text-amber-500">
-              <AlertCircle className="h-4 w-4 shrink-0" />
-              <p className="text-xs">
-                {t('droid.helpers.skipLogin.toolLimitationHint')}
-              </p>
-            </div>
-          </div>
 
           {/* Disable Auto Update Section */}
           <div
@@ -553,63 +482,6 @@ export function DroidHelpersPage() {
         </div>
       </div>
 
-      {/* Setup Dialog */}
-      <Dialog open={setupDialogOpen} onOpenChange={setSetupDialogOpen}>
-        <DialogContent className="max-w-lg">
-          <DialogHeader>
-            <DialogTitle>{t('droid.helpers.skipLogin.title')}</DialogTitle>
-            <DialogDescription>
-              {t('droid.helpers.skipLogin.description')}
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label>{t('droid.helpers.skipLogin.apiKeyLabel')}</Label>
-              <div className="flex gap-2">
-                <Input
-                  value={apiKeyValue}
-                  onChange={e => setApiKeyValue(e.target.value)}
-                  placeholder={t('droid.helpers.skipLogin.apiKeyPlaceholder')}
-                  className="font-mono flex-1"
-                />
-                <Button
-                  variant="outline"
-                  size="icon"
-                  onClick={() => setApiKeyValue(generateRandomKey())}
-                  title={t('common.refresh')}
-                >
-                  <RefreshCw className="h-4 w-4" />
-                </Button>
-              </div>
-            </div>
-
-            <div className="p-3 bg-yellow-500/10 border border-yellow-500/20 rounded-md">
-              <p className="text-sm text-yellow-600 dark:text-yellow-500">
-                ⚠️ {t('droid.helpers.skipLogin.warning')}
-              </p>
-            </div>
-
-            <div className="space-y-4 pt-2">
-              <p className="text-sm font-medium">
-                {t('droid.helpers.skipLogin.instructions.title')}
-              </p>
-              <ShellCommandSection shell="zsh" apiKeyValue={apiKeyValue} />
-              <ShellCommandSection shell="bash" apiKeyValue={apiKeyValue} />
-              <ShellCommandSection
-                shell="powershell"
-                apiKeyValue={apiKeyValue}
-              />
-            </div>
-          </div>
-
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setSetupDialogOpen(false)}>
-              {t('common.dismiss')}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
 
       {/* Disable Auto Update Dialog */}
       <Dialog

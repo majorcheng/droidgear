@@ -85,7 +85,6 @@ Run the installer directly.
 
 ### Other Features
 
-- **Skip Login Helper** - Helper for skipping login flow
 - **Auto Update** - Version check, auto update notification and download progress
 - **Window State** - Save and restore window state
 - **Exit Protection** - Warns before closing with unsaved changes

@@ -25,7 +25,6 @@ export function usePreferences() {
         return {
           theme: 'system',
           language: null,
-          skip_login_enabled: null,
           terminal_font_family: null,
           terminal_shell_command: null,
         }
@@ -88,12 +87,8 @@ export function usePreferencesManager() {
     await savePreferences(newPreferences)
   }
 
-  // Map skipLoginEnabled for convenience
-  const skipLoginEnabled = preferences?.skip_login_enabled ?? false
-
   return {
     preferences,
-    skipLoginEnabled,
     updatePreferences,
     savePreferences,
   }

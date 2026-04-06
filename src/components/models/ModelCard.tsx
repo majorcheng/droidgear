@@ -181,7 +181,7 @@ export function ModelCard({
           ) : null}
           {getStatusIcon()}
         </div>
-        <div className="text-sm text-muted-foreground truncate mt-1">
+        <div className="text-sm text-muted-foreground text-center truncate mt-1">
           {model.model} • {model.baseUrl}
         </div>
         {(() => {

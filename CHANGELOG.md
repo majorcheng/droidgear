@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.5.8
+
+**Bug Fixes / 问题修复**
+
+- Fix portable update signature manifest generation / 修正 portable 更新签名清单
+
 ## v0.5.7
 
 **New Features / 新功能**
